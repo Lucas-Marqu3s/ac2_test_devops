@@ -11,6 +11,7 @@ pipeline {
     stage('Start container') {
       steps {
         echo 'Starting container from Docker Hub...'
+<<<<<<< HEAD
 
         // Carrega variáveis do arquivo .env
         script {
@@ -26,6 +27,10 @@ pipeline {
         // Usa as variáveis carregadas
         sh 'docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS'
         sh 'docker-compose -f docker-compose.prod.yml pull'
+=======
+        sh 'docker login -u $lucasmarqu3s -p $Lu121425@'
+        sh 'docker-compose -f docker-compose.prod.yml pull'       // Baixa a imagem do Docker Hub
+>>>>>>> 39dcc5e (fix: add credentials docker)
         sh 'docker-compose -f docker-compose.prod.yml up -d --no-color'
         sleep time: 60, unit: 'SECONDS'
         sh 'docker-compose -f docker-compose.prod.yml logs'
