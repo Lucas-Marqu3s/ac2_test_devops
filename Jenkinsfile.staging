@@ -11,11 +11,25 @@ pipeline {
     stage('Start container') {
       steps {
         echo 'Starting container from Docker Hub...'
-        sh 'docker-compose -f docker-compose.staging.yml pull'       // Baixa a imagem do Docker Hub
+
+        // Carrega variáveis do arquivo .env
+        script {
+          def envVars = readFile('.env').split('\n')
+          envVars.each {
+            if (it.trim() && !it.startsWith('#')) {
+              def (key, value) = it.tokenize('=')
+              env[key.trim()] = value.trim()
+            }
+          }
+        }
+
+        // Usa as variáveis carregadas
+        sh 'docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS'
+        sh 'docker-compose -f docker-compose.staging.yml pull'
         sh 'docker-compose -f docker-compose.staging.yml up -d --no-color'
-        sleep time: 60, unit: 'SECONDS'                              // Espera o serviço Spring Boot iniciar
-        sh 'docker-compose -f docker-compose.staging.yml logs'       // Exibe logs para conferir o status
-        sh 'docker-compose -f docker-compose.staging.yml ps'         // Mostra o status do container
+        sleep time: 60, unit: 'SECONDS'
+        sh 'docker-compose -f docker-compose.staging.yml logs'
+        sh 'docker-compose -f docker-compose.staging.yml ps'
       }
     }
 
@@ -29,7 +43,7 @@ pipeline {
   post {
     always {
       echo 'Pipeline completed'
-      // Não derruba mais o container aqui
+      // sh 'docker-compose -f docker-compose.staging.yml down'
     }
   }
 }

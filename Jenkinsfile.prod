@@ -11,17 +11,31 @@ pipeline {
     stage('Start container') {
       steps {
         echo 'Starting container from Docker Hub...'
-        sh 'docker-compose -f docker-compose.prod.yml pull'       // Baixa a imagem do Docker Hub
+
+        // Carrega variáveis do arquivo .env
+        script {
+          def envVars = readFile('.env').split('\n')
+          envVars.each {
+            if (it.trim() && !it.startsWith('#')) {
+              def (key, value) = it.tokenize('=')
+              env[key.trim()] = value.trim()
+            }
+          }
+        }
+
+        // Usa as variáveis carregadas
+        sh 'docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS'
+        sh 'docker-compose -f docker-compose.prod.yml pull'
         sh 'docker-compose -f docker-compose.prod.yml up -d --no-color'
-        sleep time: 60, unit: 'SECONDS'                           // Espera o serviço Spring Boot iniciar
-        sh 'docker-compose -f docker-compose.prod.yml logs'       // Mostra os logs do container
-        sh 'docker-compose -f docker-compose.prod.yml ps'         // Verifica o status do container
+        sleep time: 60, unit: 'SECONDS'
+        sh 'docker-compose -f docker-compose.prod.yml logs'
+        sh 'docker-compose -f docker-compose.prod.yml ps'
       }
     }
 
     stage('Run tests against the container') {
       steps {
-        sh 'curl http://localhost:8585 || echo "Service not responding"'
+        sh 'curl http://localhost:8686 || echo "Service not responding"'
       }
     }
   }
@@ -29,7 +43,6 @@ pipeline {
   post {
     always {
       echo 'Pipeline completed'
-      // Se quiser parar o container no fim, descomente a linha abaixo:
       // sh 'docker-compose -f docker-compose.prod.yml down'
     }
   }
